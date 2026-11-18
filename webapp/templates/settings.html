@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}설정 · 신장비 리포트{% endblock %}
+{% block hero %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">설정</p>
+    <h1>검색 조건과 출처 기준</h1>
+    <p class="muted">후보 개수, 조사 기간, 분야별 키워드, 참고·제외 도메인을 관리합니다.</p>
+  </div>
+</section>
+{% endblock %}
+{% block content %}
+{% if saved %}<div class="notice ok">설정을 저장했습니다.</div>{% endif %}
+{% if error %}<div class="notice err">{{ error }}</div>{% endif %}
+
+<form method="post" action="/settings">
+<section class="card">
+  <h2>기본 설정</h2>
+  <div class="grid2">
+    <div class="field">
+      <label for="candidate_count">매주 1p 작성할 장비 수</label>
+      <input id="candidate_count" type="number" name="candidate_count" min="1" max="10" value="{{ s.candidate_count }}">
+    </div>
+    <div class="field">
+      <label for="default_period_days">기본 조사 기간 (일) <small>90 = 약 3개월</small></label>
+      <input id="default_period_days" type="number" name="default_period_days" min="1" max="365" value="{{ s.default_period_days }}">
+    </div>
+  </div>
+  <label class="toggle">
+    <input type="checkbox" name="auto_generate" {{ 'checked' if s.auto_generate }}>
+    <span><b>장비를 찾으면 1p를 자동으로 모두 작성</b><br><small class="muted">끄면 장비 목록만 보여 주고, 화면에서 [1p 작성]을 눌러야 작성합니다.</small></span>
+  </label>
+  <div class="field">
+    <label for="countries">우선 국가 <small>(쉼표로 구분)</small></label>
+    <input id="countries" type="text" name="countries" value="{{ s.countries|join(', ') }}">
+  </div>
+</section>
+
+<section class="card">
+  <h2>구글 드라이브 저장</h2>
+  {% if drive_root %}
+  <p class="notice ok">데스크톱용 Google Drive를 찾았습니다: <b>{{ drive_root }}</b> — [드라이브 저장]을 누르면 <b>{{ drive_root }}\{{ drive_sub }}</b> 폴더에 저장되고 자동으로 구글 드라이브에 올라갑니다.</p>
+  {% else %}
+  <p class="notice">데스크톱용 Google Drive를 찾지 못했습니다. 설치하고 로그인하면 「내 드라이브」를 자동으로 찾습니다. 다른 폴더에 저장하려면 아래에 직접 적으세요.</p>
+  {% endif %}
+  <div class="field">
+    <label for="drive_folder">저장 폴더 직접 지정 <small>비우면 「내 드라이브\{{ drive_sub }}」 자동 사용</small></label>
+    <input id="drive_folder" type="text" name="drive_folder" value="{{ s.drive_folder or '' }}" placeholder="예: G:\내 드라이브\보고서\신장비">
+  </div>
+  <p class="muted small">현재 저장 위치: {{ drive_folder or '없음 (Google Drive 설치 필요)' }} · 파일명: 작성일_장비키워드.docx (예: 20261118_노면동결센서.docx)</p>
+</section>
+
+<section class="card">
+  <h2>분야별 검색 키워드</h2>
+  <p class="muted small">키워드는 쉼표로 구분합니다. 분야 이름을 비우고 저장하면 그 분야가 삭제됩니다. 맨 아래 빈 칸에 새 분야를 추가할 수 있습니다.</p>
+  {% set cats = s.categories + [{"name": "", "keywords": {}}] %}
+  {% for c in cats %}
+  {% set i = loop.index0 %}
+  <fieldset class="cat {{ 'new' if not c.name }}">
+    <div class="field">
+      <label>{{ '새 분야 추가' if not c.name else '분야 이름' }}</label>
+      <input type="text" name="cat_name_{{ i }}" value="{{ c.name }}" placeholder="예: 제설·청소">
+    </div>
+    {% for lang in langs %}
+    <div class="field kw">
+      <label>{{ {'EN': '영어', 'JP': '일본어', 'DE': '독일어'}[lang] }}</label>
+      <textarea name="cat_{{ i }}_{{ lang }}" rows="2">{{ (c.keywords.get(lang) or [])|join(', ') }}</textarea>
+    </div>
+    {% endfor %}
+  </fieldset>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>출처 기준</h2>
+  <div class="field">
+    <label>공식 자료로 인정하는 유형 <small>(승인된 요구사항, 변경 불가)</small></label>
+    <div class="chips">{% for t in source_types %}<span class="chip static">{{ t }}</span>{% endfor %}</div>
+  </div>
+  <div class="grid2">
+    <div class="field">
+      <label for="preferred_domains">우선 참고 도메인 <small>(한 줄에 하나)</small></label>
+      <textarea id="preferred_domains" name="preferred_domains" rows="8">{{ s.preferred_domains|join('\n') }}</textarea>
+    </div>
+    <div class="field">
+      <label for="blocked_domains">제외 도메인 <small>(유튜브·블로그 등, 한 줄에 하나)</small></label>
+      <textarea id="blocked_domains" name="blocked_domains" rows="8">{{ s.blocked_domains|join('\n') }}</textarea>
+    </div>
+  </div>
+</section>
+
+<div class="actions"><button class="btn primary" type="submit">설정 저장</button></div>
+</form>
+{% endblock %}

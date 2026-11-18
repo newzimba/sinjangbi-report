@@ -1,0 +1,16 @@
+# 업무 데이터 (DB·작성한 1p·사진·이력) — 저장소에 올리지 않음
+data/
+output/
+
+# 파이썬·테스트 부산물
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# 비밀값
+.env
+*.key
+
+# Vercel
+.vercel/

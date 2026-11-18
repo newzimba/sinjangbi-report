@@ -1,0 +1,46 @@
+{# A4 미리보기 — 워드 파일과 같은 내용. 1p에는 출처를 표시하지 않는다 (출처 번호·참고 자료·사진 출처 없음) #}
+<div class="a4">
+  <div class="a4-title">해외 도로 유지관리 신장비 동향</div>
+  <div class="a4-sub">{{ d.name|plain }}</div>
+  <div class="a4-meta">{{ rep.week }} | 첨단기계화센터</div>
+
+  <div class="a4-h">□ 개요</div>
+  <table class="a4-tbl">
+    <tr><th>장비명</th><td>{{ d.name|plain }}</td><th>제조사</th><td>{{ d.maker|plain }}</td></tr>
+    <tr><th>국가</th><td>{{ d.country|plain }}</td><th>공개 시기</th><td>{{ d.released|plain }}</td></tr>
+  </table>
+
+  <div class="a4-h">□ 장비 사진</div>
+  {% set photos = (d.images or [])|selectattr('file')|list %}
+  {# 장비 사진이 없는 자리는 임의로 채우지 않고 '사진 없음'으로 표시 (워드와 동일) #}
+  {% if photos %}
+  <div class="a4-photos n2">
+    {% for i in range(2) %}
+    {% if i < photos|length %}
+    <figure><img src="/reports/{{ rep.id }}/image/{{ i }}?v={{ rep.updated_at }}" alt="{{ d.name }} 사진 {{ i + 1 }}"></figure>
+    {% else %}
+    <div class="a4-nophoto tall">사진 없음</div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="a4-nophoto">사진 없음</div>
+  {% endif %}
+
+  <div class="a4-h">□ 주요 기능·제원</div>
+  {% for t in d.functions if t|plain %}<div class="a4-b">○ {{ t|plain }}</div>{% endfor %}
+  {% for t in d.specs if t|plain %}<div class="a4-b">- {{ t|plain }}</div>{% endfor %}
+
+  <div class="a4-h">□ 기존 방식 대비 개선점</div>
+  {% for k, label in [('safety','안전'),('efficiency','효율'),('cost','비용')] %}
+    {% if d.improvements and d.improvements[k] %}<div class="a4-b">○ {{ label }}: {{ d.improvements[k]|plain }}</div>{% endif %}
+  {% endfor %}
+
+  <div class="a4-h">□ 국내 적용성</div>
+  {% for t in d.domestic if t|plain %}<div class="a4-b">○ {{ t|plain }}</div>{% endfor %}
+
+  <div class="a4-h">□ 벤치마킹 판단:
+    {% for j in judgements %}<span class="a4-j {{ 'on' if d.judgement == j }}">{{ '■' if d.judgement == j else '□' }} {{ j }}</span>{% endfor %}
+  </div>
+  {% for t in d.reasons if t|plain %}<div class="a4-b">○ {{ t|plain }}</div>{% endfor %}
+</div>

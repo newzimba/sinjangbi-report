@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}이번 주 1p · 신장비 리포트{% endblock %}
+{% block hero %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">{{ run.week }}</p>
+    <h1>이번 주 1p {{ run.result.candidates|length }}건</h1>
+    <p class="muted">조사 기간 {{ run.start }} ~ {{ run.end }} · 분야 {{ run.categories|join(', ') if run.categories else '전체' }} · 도로 유지관리 장비 근접도 순{% if run.result.candidates and run.result.candidates[0].developed is defined %} · 최근 3년 내 개발 장비{% else %} · <b>3년 개발 조건 적용 전 조사</b>{% endif %}</p>
+  </div>
+  {% with step=(3 if reps else 2) %}{% include "_steps.html" %}{% endwith %}
+</section>
+{% endblock %}
+{% block content %}
+{% set res = run.result %}
+{% if msg %}<div class="notice ok">{{ msg }}</div>{% endif %}
+
+{% set n = res.candidates|length %}
+{% set n_rep = reps.values()|selectattr('status', 'equalto', 'reported')|list|length %}
+{% set n_gen = reps.values()|selectattr('status', 'equalto', 'generating')|list|length %}
+{% set n_err = reps.values()|selectattr('status', 'equalto', 'error')|list|length %}
+<section class="card batch-bar">
+  <div class="batch-stats">
+    <div><span>장비</span><b>{{ n }}</b></div>
+    <div><span>1p 준비</span><b>{{ ready_n }}</b></div>
+    <div><span>작성 중</span><b>{{ n_gen }}</b></div>
+    <div><span>보고 완료</span><b>{{ n_rep }}</b></div>
+    {% if n_err %}<div class="err"><span>오류</span><b>{{ n_err }}</b></div>{% endif %}
+  </div>
+  <div class="batch-actions">
+    {% if reps|length < n %}
+    <form method="post" action="/runs/{{ run.id }}/generate_all">
+      <button class="btn primary" type="submit">{{ n - reps|length }}건 1p 작성 시작</button>
+    </form>
+    {% endif %}
+    {% if ready_n %}<a class="btn ghost" href="/runs/{{ run.id }}/download.zip">워드 {{ ready_n }}건 한번에 받기 (ZIP)</a>
+    <form method="post" action="/runs/{{ run.id }}/drive">
+      <button class="btn drive-btn" type="submit">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l6 11-4 7H6l-4-7z"/><path d="m8 3 8 18"/><path d="M2 14h20"/></svg>드라이브에 {{ ready_n }}건 저장</button>
+    </form>{% endif %}
+  </div>
+  {% if busy %}
+  <div class="batch-progress"><span class="spinner sm" aria-hidden="true"></span>1p를 2건씩 작성하고 있습니다. 1건에 2~4분 걸리며, 이 화면은 자동으로 새로 고쳐집니다.</div>
+  <script>setTimeout(() => location.reload(), 6000);</script>
+  {% endif %}
+</section>
+
+{% if res.search_note %}<p class="note">🔎 {{ res.search_note }}</p>{% endif %}
+{% if n < count %}
+<div class="notice">도로 유지관리 장비 근접도 기준을 넘는 장비를 {{ n }}개만 확인했습니다. 아래에서 기간을 늘리거나 분야를 바꿔 다시 찾아보세요.</div>
+{% endif %}
+
+<div class="cards">
+  {% for c in res.candidates %}
+  {% set r = reps.get(c.id) %}
+  <article class="cand {{ 'picked' if r and r.status == 'reported' }}">
+    <div class="cand-top">
+      <span class="num">{{ loop.index }}</span>
+      <span class="tag" title="{{ c.category }}">{{ c.category.split(' (')[0] }}</span>
+      {% if not c.in_period %}<span class="tag warn" title="조사 기간 밖의 소식">기간 외</span>{% endif %}
+      {% if c.developed is defined %}
+        {% if c.dev_unknown %}<span class="tag warn" title="{{ c.developed_basis }}">개발 시기 확인 필요</span>
+        {% else %}<span class="tag ok" title="{{ c.developed_basis }}">{{ c.developed }} 개발</span>{% endif %}
+      {% endif %}
+      <span class="rstate {{ r.status if r else 'none' }}">
+        {% if not r %}1p 없음{% elif r.status == 'generating' %}작성 중{% elif r.status == 'ready' %}검토 중{% elif r.status == 'reported' %}보고 완료{% else %}오류{% endif %}
+      </span>
+    </div>
+    <h3>{{ c.name }}</h3>
+    <p class="maker">{{ c.maker }} · {{ c.country }}</p>
+    {% if c.relevance is defined %}
+    <div class="rel" title="{{ c.relevance_reason }}">
+      <span class="rel-label">도로 유지관리 근접도</span>
+      <span class="rel-bar"><i style="width: {{ c.relevance * 10 }}%"></i></span>
+      <b>{{ c.relevance }}/10</b>
+    </div>
+    <p class="rel-reason">{{ c.relevance_reason }}</p>
+    {% endif %}
+    <p class="summary">{{ c.summary }}</p>
+    <dl>
+      <dt>신규성</dt><dd>{{ c.novelty }} <span class="muted">({{ c.novelty_date }})</span></dd>
+      {% if c.developed_basis %}<dt>개발 시기 근거</dt><dd>{{ c.developed_basis }}</dd>{% endif %}
+      <dt>벤치마킹 가치</dt><dd>{{ c.benchmark_value }}</dd>
+      <dt>출처</dt>
+      <dd>
+        {% for s in c.sources %}
+        <span class="src">
+          <a href="{{ s.url }}" target="_blank" rel="noopener" title="{{ s.url }}">{{ s.title|truncate(48, True, '…') }}</a>
+          <span class="muted small">{{ domain(s.url) }} · {{ s.type }}</span>
+        </span>
+        {% endfor %}
+      </dd>
+    </dl>
+    {% if r %}
+    {% if r.status == 'generating' %}<p class="rprog">⏳ {{ r.progress }}</p>{% endif %}
+    <a class="btn {{ 'primary' if r.status == 'ready' else 'ghost' }}" href="/reports/{{ r.id }}">
+      {{ '1p 검토·수정하기' if r.status == 'ready' else ('1p 보기' if r.status == 'reported' else ('진행 상황 보기' if r.status == 'generating' else '오류 확인·다시 생성')) }}</a>
+    {% else %}
+    <form method="post" action="/runs/{{ run.id }}/select">
+      <input type="hidden" name="candidate_id" value="{{ c.id }}">
+      <button class="btn primary" type="submit">이 장비 1p 작성</button>
+    </form>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+
+<section class="card">
+  <h2 class="card-title">다른 장비로 다시 찾기</h2>
+  <p class="muted small">이번에 나온 장비는 자동으로 제외됩니다. 기간을 바꾸거나 분야를 지정해 다시 찾을 수 있습니다.</p>
+  <form method="post" action="/runs/{{ run.id }}/retry">
+    <div class="grid2">
+      <div class="field"><label>시작일</label><input type="date" name="start" value="{{ run.start }}" required></div>
+      <div class="field"><label>종료일</label><input type="date" name="end" value="{{ run.end }}" required></div>
+    </div>
+    <div class="chips field">
+      {% for c in categories %}
+      <label class="chip"><input type="checkbox" name="categories" value="{{ c }}" {{ 'checked' if c in run.categories }}><span>{{ c.split(' (')[0] }}</span></label>
+      {% endfor %}
+    </div>
+    <button class="btn ghost" type="submit">다른 장비 찾기</button>
+  </form>
+</section>
+
+<details class="card">
+  <summary>조사 세부 정보 <span class="muted small">검색어 {{ res.queries|length }}개 · 웹 검색 {{ res.stats.searches }}회 · 원문 {{ res.stats.fetches }}회 · 토큰 입력 {{ "{:,}".format(res.stats.input) }} / 출력 {{ "{:,}".format(res.stats.output) }}</span></summary>
+  <h3>사용한 검색어</h3>
+  <ul class="small">{% for q in res.queries %}<li>{{ q }}</li>{% endfor %}</ul>
+  {% if res.dropped %}
+  <h3>검증에서 제외된 후보</h3>
+  <ul class="small">{% for d in res.dropped %}<li>{{ d }}</li>{% endfor %}</ul>
+  {% endif %}
+  <h3>조사 노트 (AI 원문)</h3>
+  <pre class="notes">{{ res.notes }}</pre>
+</details>
+{% endblock %}

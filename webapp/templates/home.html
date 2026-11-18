@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block band_class %}band-home{% endblock %}
+{% block hero %}
+{% set step = (5 if status == '보고 완료' else (3 if batch else (2 if latest and latest.status == 'done' else 1))) %}
+<div class="home-hero">
+  <div class="home-hero-text">
+    <span class="pill">{{ week }} · <b>{{ status }}</b></span>
+    <h1 class="display">해외 도로 유지관리 신장비,<br>매주 <em>A4 한 장</em>으로.</h1>
+    <p class="lead">영어·일본어·독일어로 공식 자료를 찾아 후보를 고르고, 출처가 달린 기관장 보고용 1p를 만듭니다.</p>
+    <div class="hero-actions">
+      {% if latest and latest.status == 'running' %}
+      <a class="btn light lg" href="/runs/{{ latest.id }}">조사 진행 보기 →</a>
+      {% elif batch %}
+      <a class="btn light lg" href="/runs/{{ batch.run_id }}">이번 주 1p {{ batch.n }}건 보기 →</a>
+      {% elif latest and latest.status == 'done' %}
+      <a class="btn light lg" href="/runs/{{ latest.id }}">찾은 장비 보기 →</a>
+      {% else %}
+      <a class="btn light lg" href="#search">이번 주 후보 찾기 →</a>
+      {% endif %}
+      <a class="btn outline-light lg" href="/history">보고 이력</a>
+    </div>
+  </div>
+  <div class="hero-steps">
+    <p class="hero-steps-title">이번 주 진행</p>
+    {% for label, desc in [('장비 찾기', '최근 3개월 소식 · 3년 내 개발 · 작업·점검·교통 데이터'), ('5건 선정', '근접도 높은 장비 5개 · 1p 자동 작성'),
+                           ('1p 검토·수정', '사진 2장 · 교차 검증 · 원문 대조'), ('보고 완료', '워드 5건 다운로드 · 이력 저장')] %}
+    {% set n = loop.index %}
+    <div class="hstep {{ 'done' if n < step else ('cur' if n == step else '') }}">
+      <span class="dot">{% if n < step %}✓{% else %}{{ n }}{% endif %}</span>
+      <div><b>{{ label }}</b><small>{{ desc }}</small></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if msg %}<div class="notice">{{ msg }}</div>{% endif %}
+
+<div class="stats">
+  <div class="stat"><span class="stat-label">누적 보고</span><b>{{ stats.reported }}<small>건</small></b><span class="stat-sub">보고 완료한 장비</span></div>
+  <div class="stat"><span class="stat-label">벤치마킹 권고</span><b>{{ stats.recommend }}<small>건</small></b><span class="stat-sub">판단 '권고'로 보고</span></div>
+  <div class="stat"><span class="stat-label">검토한 장비</span><b>{{ stats.tracked }}<small>개</small></b><span class="stat-sub">후보·초안 포함</span></div>
+  <div class="stat"><span class="stat-label">완료한 조사</span><b>{{ stats.runs }}<small>회</small></b><span class="stat-sub">다국어 후보 검색</span></div>
+</div>
+
+<div class="home-grid">
+  <section class="card" id="search">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">이번 주 장비 찾기</h2>
+        <p class="muted small">기본 조사 기간은 최근 {{ period_days }}일(약 3개월)입니다. 필요하면 날짜를 바꾸세요.</p>
+      </div>
+      <span class="icon-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </span>
+    </div>
+    <form method="post" action="/search">
+      <div class="grid2">
+        <div class="field"><label for="start">시작일</label><input id="start" type="date" name="start" value="{{ start }}" required></div>
+        <div class="field"><label for="end">종료일</label><input id="end" type="date" name="end" value="{{ end }}" required></div>
+      </div>
+      <div class="field">
+        <label>분야 <small>선택하지 않으면 전체</small></label>
+        <div class="chips">
+          {% for c in categories %}
+          <label class="chip"><input type="checkbox" name="categories" value="{{ c }}"><span>{{ c.split(' (')[0] }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <button class="btn primary lg block" type="submit">장비 {{ candidate_count }}개 찾고 1p 작성</button>
+      <p class="hint">도로 유지관리 장비에 가까운 순으로 {{ candidate_count }}개를 고르고 1p를 각각 만듭니다. 검색 3~6분 + 1p 작성 약 10분. 이미 보고한 장비는 제외됩니다.</p>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2 class="card-title">최근 이력</h2>
+      <a href="/history" class="link">전체 보기 →</a>
+    </div>
+    {% if recent %}
+    <ul class="list">
+      {% for r in recent %}
+      <li>
+        <span class="list-ico" aria-hidden="true">{{ (r.category or '기')[:1] }}</span>
+        <div><b>{{ r.name }}</b><span class="muted small">{{ r.week }} · {{ r.country or '-' }} · {{ (r.category or '-').split(' (')[0] }}</span></div>
+        <span class="tag {{ 'ok' if r.status == '보고완료' }}">{{ r.status }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">아직 이력이 없습니다.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="features">
+  <div class="feature"><span class="f-ico">🔎</span><b>다국어 공식 출처 검색</b><p>영어·일본어·독일어로 제조사·정부·학술·전문지만 근거로 씁니다.</p></div>
+  <div class="feature"><span class="f-ico">🖼️</span><b>AI 사진 확인</b><p>사진을 직접 보고 장비 사진 2장만 고릅니다. 인물·풍경 사진은 뺍니다.</p></div>
+  <div class="feature"><span class="f-ico">✅</span><b>교차 검증</b><p>원래 출처가 아닌 다른 기관 자료로 사실을 다시 확인하고 고칩니다.</p></div>
+  <div class="feature"><span class="f-ico">📄</span><b>A4 1장 워드</b><p>MS Word로 페이지 수를 확인하고, 넘치면 자동으로 줄입니다.</p></div>
+</section>
+{% endblock %}

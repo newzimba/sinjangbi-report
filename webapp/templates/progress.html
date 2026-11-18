@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}후보 찾는 중 · 신장비 리포트{% endblock %}
+{% block hero %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">{{ run.week }}</p>
+    <h1>후보 찾기</h1>
+    <p class="muted">조사 기간 {{ run.start }} ~ {{ run.end }} · 분야 {{ run.categories|join(', ') if run.categories else '전체' }}</p>
+  </div>
+  {% with step=1 %}{% include "_steps.html" %}{% endwith %}
+</section>
+{% endblock %}
+{% block content %}
+
+<section class="card">
+  {% if run.status == 'running' %}
+  <div class="progress-box">
+    <div class="spinner" aria-hidden="true"></div>
+    <div>
+      <p class="progress-text" id="progress">{{ run.progress }}</p>
+      <p class="muted small">다국어 검색과 원문 확인에 보통 2~5분 걸립니다. 이 창을 닫아도 조사는 계속되며, 홈에서 다시 열 수 있습니다.</p>
+    </div>
+  </div>
+  <form method="post" action="/runs/{{ run.id }}/cancel"><button class="btn ghost" type="submit">조사 취소</button></form>
+  <script>
+    (function poll() {
+      fetch("/runs/{{ run.id }}/status").then(r => r.json()).then(d => {
+        if (d.status === "running") { document.getElementById("progress").textContent = d.progress || ""; setTimeout(poll, 2000); }
+        else { location.reload(); }
+      }).catch(() => setTimeout(poll, 4000));
+    })();
+  </script>
+  {% else %}
+  <div class="notice {{ 'err' if run.status == 'error' }}">
+    {% if run.status == 'cancelled' %}조사를 취소했습니다.{% else %}조사 중 문제가 생겼습니다: {{ run.error }}{% endif %}
+  </div>
+  <form method="post" action="/runs/{{ run.id }}/retry" class="row">
+    <input type="hidden" name="start" value="{{ run.start }}">
+    <input type="hidden" name="end" value="{{ run.end }}">
+    {% for c in run.categories %}<input type="hidden" name="categories" value="{{ c }}">{% endfor %}
+    <button class="btn primary" type="submit">같은 조건으로 다시 찾기</button>
+    <a class="btn ghost" href="/">홈으로</a>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

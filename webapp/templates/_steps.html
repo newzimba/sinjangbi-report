@@ -1,0 +1,9 @@
+{# 진행 단계 표시. 사용: {% with step=2 %}{% include "_steps.html" %}{% endwith %} (5 = 모두 완료) #}
+<ol class="stepper">
+  {% for label in ['후보 찾기', '후보 선택', '1p 검토·수정', '다운로드·보고 완료'] %}
+  {% set n = loop.index %}
+  <li class="{{ 'done' if n < step else ('cur' if n == step else '') }}">
+    <span class="dot">{% if n < step %}✓{% else %}{{ n }}{% endif %}</span><span class="lbl">{{ label }}</span>
+  </li>
+  {% endfor %}
+</ol>

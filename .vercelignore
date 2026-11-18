@@ -1,0 +1,6 @@
+tests/
+data/
+output/
+.pytest_cache/
+run.bat
+pytest.ini

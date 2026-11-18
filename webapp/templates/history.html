@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}이력 · 신장비 리포트{% endblock %}
+{% block hero %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">이력</p>
+    <h1>보고 이력</h1>
+    <p class="muted">보고 완료한 장비는 다음 조사에서 자동으로 제외됩니다.</p>
+  </div>
+</section>
+{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head">
+    <h2>전체 목록</h2>
+    <a class="btn ghost" href="/history.csv?category={{ f.category|urlencode }}&judgement={{ f.judgement|urlencode }}&status={{ f.status|urlencode }}">엑셀로 내보내기 (CSV)</a>
+  </div>
+  <form method="get" action="/history" class="row filters">
+    <select name="category"><option value="">분류 전체</option>
+      {% for c in categories %}<option {{ 'selected' if f.category == c }}>{{ c }}</option>{% endfor %}</select>
+    <select name="judgement"><option value="">판단 전체</option>
+      {% for j in judgements %}<option {{ 'selected' if f.judgement == j }}>{{ j }}</option>{% endfor %}</select>
+    <select name="status"><option value="">상태 전체</option>
+      {% for s in ['보고완료', '1p초안', '후보'] %}<option {{ 'selected' if f.status == s }}>{{ s }}</option>{% endfor %}</select>
+    <button class="btn ghost" type="submit">거르기</button>
+    <span class="muted small">{{ rows|length }}건</span>
+  </form>
+  {% if rows %}
+  <div class="tbl-scroll">
+  <table class="tbl">
+    <thead><tr><th>주차</th><th>장비명</th><th>제조사</th><th>국가</th><th>분류</th><th>상태</th><th>판단</th><th>출처</th><th>파일</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.week }}</td><td>{{ r.name }}</td><td>{{ r.maker or '-' }}</td><td>{{ r.country or '-' }}</td>
+        <td>{{ (r.category or '-').split(' (')[0] }}</td><td><span class="tag">{{ r.status }}</span></td><td>{{ r.judgement or '-' }}</td>
+        <td>{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">열기</a>{% else %}-{% endif %}</td>
+        <td>{% if r.report_id %}<a href="/reports/{{ r.report_id }}/download">워드</a> · <a href="/reports/{{ r.report_id }}">보기</a>{% else %}-{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted small">상태가 "보고완료"인 장비만 다음 조사에서 중복으로 제외됩니다. "csv이관" 항목은 이전 스크립트 시험 결과입니다.</p>
+  {% else %}
+  <p class="empty">조건에 맞는 이력이 없습니다.</p>
+  {% endif %}
+</section>
+{% endblock %}

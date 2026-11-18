@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}1p 작성 중 · 신장비 리포트{% endblock %}
+{% block hero %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">{{ rep.week }} · <a href="/runs/{{ rep.run_id }}" class="link">이번 주 1p 전체</a></p>
+    <h1>1p 초안 작성</h1>
+    <p class="muted">출처 원문 확인 → 1p 작성 → 장비 사진 2장 찾기 → A4 1장 맞춤 순서로 진행됩니다.</p>
+  </div>
+  {% with step=3 %}{% include "_steps.html" %}{% endwith %}
+</section>
+{% endblock %}
+{% block content %}
+
+<section class="card">
+  {% if rep.status == 'generating' %}
+  <div class="progress-box">
+    <div class="spinner" aria-hidden="true"></div>
+    <div>
+      <p class="progress-text" id="progress">{{ rep.progress }}</p>
+      <p class="muted small">보통 2~4분 걸립니다. 이 창을 닫아도 작성은 계속됩니다.</p>
+    </div>
+  </div>
+  <form method="post" action="/reports/{{ rep.id }}/cancel"><button class="btn ghost" type="submit">작성 취소</button></form>
+  <script>
+    (function poll() {
+      fetch("/reports/{{ rep.id }}/status").then(r => r.json()).then(d => {
+        if (d.status === "generating") { document.getElementById("progress").textContent = d.progress || ""; setTimeout(poll, 2000); }
+        else { location.reload(); }
+      }).catch(() => setTimeout(poll, 4000));
+    })();
+  </script>
+  {% else %}
+  <div class="notice err">1p 작성 중 문제가 생겼습니다: {{ rep.error }}</div>
+  <form method="post" action="/reports/{{ rep.id }}/regenerate" class="row">
+    <button class="btn primary" type="submit">다시 생성</button>
+    <a class="btn ghost" href="/runs/{{ rep.run_id }}">다른 후보 고르기</a>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

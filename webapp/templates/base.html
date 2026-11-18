@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}신장비 리포트{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 9 4"/><path d="M20 20 15 4"/><path d="M12 6v2"/><path d="M12 11v2"/><path d="M12 16v2"/></svg>
+        </span>
+        <span class="brand-text"><b>신장비 리포트</b><small>첨단기계화센터 · 해외 유지관리 장비 동향</small></span>
+      </a>
+      <nav>
+        <a href="/" class="{{ 'on' if active == 'home' }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>홈</a>
+        <a href="/history" class="{{ 'on' if active == 'history' }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>이력</a>
+        <a href="/settings" class="{{ 'on' if active == 'settings' }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="band {% block band_class %}{% endblock %}">
+    <div class="wrap">{% block hero %}{% endblock %}</div>
+  </section>
+
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-inner">
+      <div>
+        <b>신장비 리포트</b>
+        <p>한국도로공사 첨단기계화센터 · 해외 도로 유지관리 신장비 주간 동향 보고 도구</p>
+      </div>
+      <div>
+        <b>작성 원칙</b>
+        <p>공식 출처만 사용 · 모든 사실에 출처 번호 · A4 1장 · 개조식</p>
+      </div>
+      <div>
+        <b>주의</b>
+        <p>AI 초안은 반드시 원문과 대조한 뒤 보고하세요. 내부 업무용입니다.</p>
+      </div>
+    </div>
+  </footer>
+  <script>
+    // 입력창 공통: 글 상자 자동 높이 + 한 줄 글자 수 표시 (개조식 50자 기준)
+    document.querySelectorAll("textarea").forEach(t => {
+      const fit = () => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; };
+      t.addEventListener("input", fit); fit();
+    });
+    document.querySelectorAll("textarea[data-lines]").forEach(t => {
+      const out = document.createElement("div"); out.className = "counter"; t.after(out);
+      const limit = +t.dataset.lines || 50;
+      const upd = () => {
+        const lines = t.value.split("\n").map(s => s.replace(/\[\d+\]/g, "").trim()).filter(Boolean);
+        const longest = lines.reduce((m, s) => Math.max(m, s.length), 0);
+        const over = lines.filter(s => s.length > limit).length;
+        out.textContent = `${lines.length}줄 · 가장 긴 줄 ${longest}자` + (over ? ` · ${limit}자 넘는 줄 ${over}개` : "");
+        out.classList.toggle("warn", over > 0);
+      };
+      t.addEventListener("input", upd); upd();
+    });
+    document.querySelectorAll("input[data-count]").forEach(i => {
+      const out = document.createElement("span"); out.className = "counter inline"; i.parentElement.appendChild(out);
+      const limit = +i.dataset.count;
+      const upd = () => { const n = i.value.replace(/\[\d+\]/g, "").trim().length;
+        out.textContent = `${n}/${limit}자`; out.classList.toggle("warn", n > limit); };
+      i.addEventListener("input", upd); upd();
+    });
+    // 파일 올리기 상자: 고른 파일 이름 표시
+    document.querySelectorAll(".drop input[type=file]").forEach(f => f.addEventListener("change", () => {
+      const lbl = f.closest(".drop").querySelector(".drop-name");
+      if (lbl) lbl.textContent = f.files[0] ? f.files[0].name : "파일을 고르세요";
+    }));
+  </script>
+</body>
+</html>
